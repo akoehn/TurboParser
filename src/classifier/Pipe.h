@@ -44,6 +44,9 @@ public:
   // Save/load the model to/from a file.
   void SaveModelFile() { SaveModelByName(options_->GetModelFilePath()); }
   void LoadModelFile() { LoadModelByName(options_->GetModelFilePath()); }
+  void SaveModelByName(const std::string &model_name);
+  void LoadModelByName(const std::string &model_name);
+
 
   // Initialize. Override this method for task-specific initialization.
   virtual void Initialize();
@@ -74,8 +77,6 @@ protected:
   virtual Features *CreateFeatures() = 0;
 
   // Save/load model.
-  void SaveModelByName(const std::string &model_name);
-  void LoadModelByName(const std::string &model_name);
   virtual void SaveModel(FILE* fs);
   virtual void LoadModel(FILE* fs);
 

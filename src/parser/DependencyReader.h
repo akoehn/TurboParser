@@ -29,6 +29,11 @@ class DependencyReader : public Reader {
 public:
   DependencyReader() {};
   virtual ~DependencyReader() {};
+  DependencyInstance *StringToInstance(const string &sentence);
+
+protected:
+  DependencyInstance *VectorToInstance(const vector<vector<string> > &sentence_fields);
+
 
 public:
   Instance *GetNext();

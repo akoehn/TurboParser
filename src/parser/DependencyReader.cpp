@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2015 Andre Martins
+// Copyright (c) 2017 Arne Köhn
 // All Rights Reserved.
 //
 // This file is part of TurboParser 2.3.
@@ -21,24 +22,20 @@
 #include <iostream>
 #include <sstream>
 
-Instance *DependencyReader::GetNext() {
-  // Fill all fields for the entire sentence.
-  std::vector<std::vector<std::string> > sentence_fields;
-  std::string line;
-  if (is_.is_open()) {
-    while (!is_.eof()) {
-      getline(is_, line);
+DependencyInstance *DependencyReader::StringToInstance(const string &sentence) {
+  vector<vector<string> > sentence_fields;
+  vector<string> lines;
+  StringSplit(sentence, "\n", &lines, true);
+  for (string &line: lines) {
       if (line.length() <= 0) break;
-      // Ignore comment lines (necessary for CONLLU files).
-      if (0 == line.substr(0, 1).compare("#")) continue;
-      std::vector<std::string> fields;
-      StringSplit(line, "\t", &fields, true);
-      // Ignore contraction tokens (necessary for CONLLU files).
-      if (fields[0].find_first_of("-") != fields[0].npos) continue;
+      vector<string> fields;
+      StringSplit(line, "\t", &fields, false);
       sentence_fields.push_back(fields);
-    }
   }
+  return VectorToInstance(sentence_fields);
+}
 
+DependencyInstance *DependencyReader::VectorToInstance(const vector<vector<string> > &sentence_fields) {
   // Sentence length.
   int length = sentence_fields.size();
 
@@ -98,5 +95,27 @@ Instance *DependencyReader::GetNext() {
     instance->Initialize(forms, lemmas, cpos, pos, feats, deprels, heads);
   }
 
-  return static_cast<Instance*>(instance);
+  return instance;
+}
+
+
+Instance *DependencyReader::GetNext() {
+  // Fill all fields for the entire sentence.
+  std::vector<std::vector<std::string> > sentence_fields;
+  std::string line;
+  if (is_.is_open()) {
+    while (!is_.eof()) {
+      getline(is_, line);
+      if (line.length() <= 0) break;
+      // Ignore comment lines (necessary for CONLLU files).
+      if (0 == line.substr(0, 1).compare("#")) continue;
+      std::vector<std::string> fields;
+      StringSplit(line, "\t", &fields, true);
+      // Ignore contraction tokens (necessary for CONLLU files).
+      if (fields[0].find_first_of("-") != fields[0].npos) continue;
+      sentence_fields.push_back(fields);
+    }
+  }
+
+  return VectorToInstance(sentence_fields);
 }
