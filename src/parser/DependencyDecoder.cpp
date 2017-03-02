@@ -1353,6 +1353,70 @@ void DependencyDecoder::DecodeFactorGraph(Instance *instance, Parts *parts,
     }
   }
 
+  /*
+   * Build Virtual Node factors.
+   * We build two kinds of factors:
+   *
+   * The vn_root factor prevents virtual nodes without non-virtual
+   * dependents from being attached to root
+   *                     | -- we build these               -- |
+   * ∀ vn ∈ virtualnodes. (∀ w ∈ words. ¬(vn→w)) ⇒ ¬ root→vn)
+   *
+   * The unused_virtual factors make sure that a virtual node is only
+   * attached to "unused" if no other word/virtual node is attached to
+   * it.                              | -- we build these --  |
+   * ∀ w ∈ words. ∀ vn ∈ virtualnodes. ¬(vn→w) ∨ ¬(unused→vn)
+   */
+  int vn_start = 0;
+  while (vn_start < sentence->size()) {
+	++vn_start;
+	int numFeats = sentence->GetNumMorphFeatures(vn_start);
+	if (sentence->IsVirtual(vn_start))
+	  break;
+  }
+
+  for (int vn = vn_start; vn < sentence->size(); vn++) {
+    vector<AD3::BinaryVariable*> virtual_to_root_factor;
+    vector<bool> virtual_to_root_negated;
+    int vn_to_root_index = dependency_parts->FindArc(0,vn);
+    // only build the factor if attachment to root is possible
+    bool build_vn_root_factor = vn_to_root_index != -1;
+    int unused_arc_index = dependency_parts->FindArc(sentence->size()-1,vn);
+	bool build_unused_factor = unused_arc_index != -1;
+    if (!build_unused_factor && !build_vn_root_factor)
+      continue; //can't attach to "unused" anyway -> don't need to
+                //build a factor preventing it
+    for (int m = 0; m < sentence->size(); m++) {
+      // get arc with vn as head for our unused factor
+      int arc_index = dependency_parts->FindArc(vn,m);
+      if (arc_index >=0) {
+        if (m< vn_start && build_vn_root_factor) {
+          virtual_to_root_factor.push_back(variables[arc_index]);
+          virtual_to_root_negated.push_back(true);
+        }
+		if (build_unused_factor) {
+		  // Create a factor that prevents incoming edge together with att. to unused
+		  vector<bool> negated (2,true);
+		  vector <AD3::BinaryVariable*> unused_virtual_factor;
+		  unused_virtual_factor.push_back(variables[arc_index]);
+		  unused_virtual_factor.push_back(variables[unused_arc_index]);
+		  factor_graph->CreateFactorOR(unused_virtual_factor, negated);
+		  factor_part_indices_.push_back(-1);
+		}
+      }
+    }
+    if (build_vn_root_factor) {
+      virtual_to_root_factor.push_back(variables[vn_to_root_index]);
+      virtual_to_root_negated.push_back(true);
+	  if (virtual_to_root_factor.size() > 1) {
+		factor_graph->CreateFactorIMPLY(virtual_to_root_factor, virtual_to_root_negated);
+	  } else {
+		factor_graph->CreateFactorXOR(virtual_to_root_factor, virtual_to_root_negated);
+	  }
+	  factor_part_indices_.push_back(-1);
+    }
+  }
+
   int offset_path_variables = -1;
   if (use_flows) {
     // Create flow variables.

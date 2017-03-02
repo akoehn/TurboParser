@@ -47,6 +47,7 @@ void DependencyInstanceNumeric::Initialize(
   is_verb_.resize(length);
   is_punc_.resize(length);
   is_coord_.resize(length);
+  is_virt_.resize(length);
   heads_.resize(length);
   relations_.resize(length);
 
@@ -113,6 +114,7 @@ void DependencyInstanceNumeric::Initialize(
     is_verb_[i] = false;
     is_punc_[i] = false;
     is_coord_[i] = false;
+	is_virt_[i] = false;
 
     const char* tag = instance->GetPosTag(i).c_str();
     if (tag[0] == 'v' || tag[0] == 'V') {
@@ -137,6 +139,14 @@ void DependencyInstanceNumeric::Initialize(
                strcmp(tag, "CC") == 0 ||
                strcmp(tag, "cc") == 0) {
       is_coord_[i] = true;
+    }
+
+    int numFeats = instance->GetNumMorphFeatures(i);
+    for (int j=0; j < numFeats; j++) {
+      if ("virtual" == instance->GetMorphFeature(i,j)) {
+        is_virt_[i] = true;
+        break;
+      }
     }
 
     heads_[i] = instance->GetHead(i);

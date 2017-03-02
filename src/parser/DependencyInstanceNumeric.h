@@ -131,6 +131,7 @@ public:
   bool IsVerb(int i) { return is_verb_[i]; };
   bool IsPunctuation(int i) { return is_punc_[i]; };
   bool IsCoordination(int i) { return is_coord_[i]; };
+  bool IsVirtual(int i) { return is_virt_[i]; };
   int GetHead(int i) { return heads_[i]; };
   int GetRelationId(int i) { return relations_[i]; };
 
@@ -148,6 +149,7 @@ protected:
   vector<bool> is_verb_;
   vector<bool> is_punc_;
   vector<bool> is_coord_;
+  vector<bool> is_virt_;
   vector<int> heads_;
   vector<int> relations_;
 };
